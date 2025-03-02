@@ -1,0 +1,74 @@
+@page "/fetchproducts"
+@inject HttpClient Http
+
+<h3>Product List</h3>
+
+<ul>
+   @if (products != null)
+    {
+        foreach (var product in products)
+        {
+            <li><h4>@product.Name</h4>
+                <ul>
+                    <li>Price: @product.Price.ToString("c")</li>
+                    <li>Stock: @product.Stock</li>
+                    <li>Category: @product.Category?.Name</li>
+                </ul>
+            </li>
+        }
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <li>@errorMessage</li>
+    }
+    else
+    {
+        <li>Loading...</li>
+    }
+</ul>
+
+@code {
+    private Product[]? products;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            products = await Http.GetFromJsonAsync<Product[]>("http://localhost:5046/api/productlist");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            HandleError("Error fetching products. Please try again later.", httpEx);
+        }
+        catch (TaskCanceledException timeoutEx)
+        {
+            HandleError("Request timed out. Please try again later.", timeoutEx);
+        }
+        catch (Exception ex)
+        {
+            HandleError("An unexpected error occurred.", ex);
+        }
+    }
+
+    private void HandleError(string message, Exception ex)
+    {
+        errorMessage = message;
+        Console.WriteLine(ex.Message);
+    }
+
+    public class Product
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public double Price { get; set; }
+        public int Stock { get; set; }
+        public Category? Category { get; set; }
+    }
+
+    public class Category 
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+}
